@@ -213,13 +213,15 @@ load (const char *file_name, void (**eip) (void), void **esp)
 	struct file *file = NULL;
 	off_t file_ofset;
 	bool success = false;
-	int i;
+	int i, arg_count;
 
 	/* Allocate and activate page directory. */
 	t->pagedir = pagedir_create ();
 	if (t->pagedir == NULL) 
 		goto done;
 	process_activate ();
+
+	arg_count = parse_filename(file_name);	//XXX (junho) : parse file_name and set count
 
 	/* Open executable file. */
 	file = filesys_open (file_name);
@@ -304,6 +306,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 	/* Set up stack. */
 	if (!setup_stack (esp))
 		goto done;
+	//TODO (heojun || junho) : make 'construct_ESP(esp)' this should include arg_count as parameter
 
 	/* Start address. */
 	*eip = (void (*) (void)) ehdr.e_entry;
@@ -437,7 +440,7 @@ setup_stack (void **esp)
 	{
 		success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
 		if (success)
-			*esp = PHYS_BASE;
+			*esp = PHYS_BASE - 12;
 		else
 			palloc_free_page (kpage);
 	}
@@ -462,4 +465,18 @@ install_page (void *upage, void *kpage, bool writable)
 	   address, then map our page there. */
 	return (pagedir_get_page (th->pagedir, upage) == NULL
 			&& pagedir_set_page (th->pagedir, upage, kpage, writable));
+}
+
+int parse_filename(char *name){
+	int count = 0;
+	char *token, *save_ptr;
+
+	while(1){
+		token = strtok_r(name, " ',\t\r\0\n", &save_ptr);
+		if(token == NULL)
+			break;
+		count++;
+	}
+
+	return count;
 }

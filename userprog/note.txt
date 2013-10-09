@@ -1,0 +1,6 @@
+1. process.c
+	file_name string을 strtok_r 을 사용하여 토큰 단위로 자르게 되면
+	grep foo bar = grep\0foo\0bar\0가 되는데
+	이럴 경우 다른 함수에서 file_name 접근시 grep만 읽게 되는거 아님?
+
+2. eip는 먼가요??
