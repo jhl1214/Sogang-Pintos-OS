@@ -306,7 +306,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
 	/* Set up stack. */
 	if (!setup_stack (esp))
 		goto done;
-	//TODO (heojun || junho) : make 'construct_ESP(esp)' this should include arg_count as parameter
+
+	construct_ESP(esp, arg_count, file_name);
 
 	/* Start address. */
 	*eip = (void (*) (void)) ehdr.e_entry;
@@ -467,16 +468,23 @@ install_page (void *upage, void *kpage, bool writable)
 			&& pagedir_set_page (th->pagedir, upage, kpage, writable));
 }
 
-int parse_filename(char *name){
+int parse_filename(char *s){
 	int count = 0;
 	char *token, *save_ptr;
 
-	while(1){
+	/*while(1){
 		token = strtok_r(name, " ',\t\r\0\n", &save_ptr);
 		if(token == NULL)
 			break;
 		count++;
-	}
+	}*/
+	for(token = strtok_r(s, " \n\0\r\t',", &save_ptr);token != NULL;token = strtok_r(NULL, " \n\0\r\t',", &save_ptr))
+		count++;
+	//TODO (junho) : is it okay to change this way?
 
 	return count;
+}
+
+void construct_ESP(void **esp, int arg_count, char *s){
+	//TODO (junho || heojun) : finish construct_ESP function
 }
