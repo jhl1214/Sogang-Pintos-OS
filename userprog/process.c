@@ -88,6 +88,9 @@ start_process (void *file_name_)
 	int
 process_wait (tid_t child_tid UNUSED) 
 {
+	while(1){
+	}
+
 	return -1;
 }
 
@@ -213,7 +216,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
 	struct file *file = NULL;
 	off_t file_ofset;
 	bool success = false;
-	int i, arg_count;
+	int i, count;
+	char *ptr = file_name;
 
 	/* Allocate and activate page directory. */
 	t->pagedir = pagedir_create ();
@@ -221,7 +225,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 		goto done;
 	process_activate ();
 
-	arg_count = parse_filename(file_name);	//XXX (junho) : parse file_name and set count
+	count = parse_filename(ptr);	//XXX (junho) : new add
 
 	/* Open executable file. */
 	file = filesys_open (file_name);
@@ -307,10 +311,11 @@ load (const char *file_name, void (**eip) (void), void **esp)
 	if (!setup_stack (esp))
 		goto done;
 
-	construct_ESP(esp, arg_count, file_name);
-
 	/* Start address. */
 	*eip = (void (*) (void)) ehdr.e_entry;
+
+	construct_ESP(esp, count, ptr);
+	hex_dump(0xbfffffcc, esp, 100, true);
 
 	success = true;
 
@@ -441,7 +446,7 @@ setup_stack (void **esp)
 	{
 		success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
 		if (success)
-			*esp = PHYS_BASE - 12;
+			*esp = PHYS_BASE - 12;	//XXX (junho) : until implement argument passing
 		else
 			palloc_free_page (kpage);
 	}
@@ -469,22 +474,67 @@ install_page (void *upage, void *kpage, bool writable)
 }
 
 int parse_filename(char *s){
-	int count = 0;
 	char *token, *save_ptr;
+	int count = 0;
 
-	/*while(1){
-		token = strtok_r(name, " ',\t\r\0\n", &save_ptr);
-		if(token == NULL)
-			break;
+	for(token = strtok_r(s, " ", &save_ptr);token!=NULL;token = strtok_r(NULL, " ", &save_ptr))
 		count++;
-	}*/
-	for(token = strtok_r(s, " \n\0\r\t',", &save_ptr);token != NULL;token = strtok_r(NULL, " \n\0\r\t',", &save_ptr))
-		count++;
-	//TODO (junho) : is it okay to change this way?
 
 	return count;
 }
 
-void construct_ESP(void **esp, int arg_count, char *s){
-	//TODO (junho || heojun) : finish construct_ESP function
+void construct_ESP(void **esp, int count, char *file_name){
+/*	int size = 0, n = 0, cn = count;
+	int align;
+	int *address[100];
+	char *add[100], *argv;
+	int length = 0;
+
+	while(cn--){
+		add[cn] = file_name + size;
+		for(;*(file_name+size)!='\0';size++)
+			;
+		size++;
+	}
+
+	cn = 0;
+	while(cn<count){
+		n = strlen(add[cn]);
+		for(length=0;length<n&&(*(add[cn]+length)==' ');length++){}
+		*esp = *esp - (n-length+1);
+		memcpy(*esp, add[cn]+length, (n-length+1));
+		address[count-cn-1] = *esp;
+		cn++;
+	}
+
+	align = (4 - size%4)%4;
+	*esp = *esp - align;
+	size += align;
+	memset(*esp, 0, align);
+
+	*esp = *esp - 4;
+	size += 4;
+	memset(*esp, 0, 4);
+
+	*esp = *esp - 4;
+	size += 4;
+
+	cn = count;
+	while(cn){
+		memcpy(*esp, &address[cn-1], 4);
+		if(cn == 1)
+			argv = *esp;
+
+		*esp = *esp-4;
+		size += 4;
+		cn--;
+	}
+
+	memcpy(*esp, &argv, 4);
+	*esp = *esp - 4;
+	size += 4;
+
+	memcpy(*esp, &count, 4);
+	*esp = *esp - 4;
+	size += 4;*/
 }
