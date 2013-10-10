@@ -4,3 +4,5 @@
 	이럴 경우 다른 함수에서 file_name 접근시 grep만 읽게 되는거 아님?
 
 2. eip는 먼가요??
+
+3. process.c 함수setup_stack안에  *esp = PHYS_BASE - 12;에서 -12 는 왜 하나요? 
