@@ -495,7 +495,7 @@ void construct_ESP(void **esp, int count, char *file_name, char **arg){
 	int cnt = count;
 	int i=0, j=0;
 	int arglen = 0, totallen = 0;
-	int *address[100];
+	int *argaddress[100];
 	char *argv;
 	int align;
 	
@@ -509,7 +509,7 @@ void construct_ESP(void **esp, int count, char *file_name, char **arg){
 		*esp = *esp - (arglen + 1);
 		printf("debug construct_ESP->arg[] : %s, arg length %d, esp %x\n",arg[i], arglen, (int)*esp);
 		memcpy(*esp, arg[i], (arglen + 1) );
-		address[i] = *esp;
+		argaddress[i] = *esp;
 	}
 
 	//word-align
@@ -530,7 +530,8 @@ void construct_ESP(void **esp, int count, char *file_name, char **arg){
 
 	cnt = count;
 	while(cnt){
-		memcpy(*esp, &address[cnt-1], 4);
+		
+		memcpy(*esp, &argaddress[cnt-1], 4);
 		if(cnt == 1)
 			argv = *esp;
 
