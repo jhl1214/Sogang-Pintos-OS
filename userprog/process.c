@@ -88,9 +88,7 @@ start_process (void *file_name_)
 	int
 process_wait (tid_t child_tid UNUSED) 
 {
-	while(1){
-	}
-
+	while(1){}
 	return -1;
 }
 
@@ -217,7 +215,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
 	off_t file_ofset;
 	bool success = false;
 	int i, count;
-	char *ptr = file_name;
 	char *arg[100];
 
 	/* Allocate and activate page directory. */
@@ -226,7 +223,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 		goto done;
 	process_activate ();
 
-	count = parse_filename(ptr, arg);	//XXX (junho) : new add
+	count = parse_filename(file_name, arg);	//XXX (junho) : new add
 
 	/* Open executable file. */
 	file = filesys_open (file_name);
@@ -315,13 +312,15 @@ load (const char *file_name, void (**eip) (void), void **esp)
 	/* Start address. */
 	*eip = (void (*) (void)) ehdr.e_entry;
 
-	construct_ESP(esp, count, ptr, arg);
+	construct_ESP(esp, count, arg);
+	hex_dump((int)*esp, *esp, PHYS_BASE-(int)*esp, true);
 
 	success = true;
 
 done:
 	/* We arrive here whether the load is successful or not. */
 	file_close (file);
+	printf("Debug : hi\n");
 	return success;
 }
 
@@ -446,7 +445,7 @@ setup_stack (void **esp)
 	{
 		success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
 		if (success)
-			*esp = PHYS_BASE - 12;	//XXX (junho) : until implement argument passing
+			*esp = PHYS_BASE;
 		else
 			palloc_free_page (kpage);
 	}
@@ -474,11 +473,8 @@ install_page (void *upage, void *kpage, bool writable)
 }
 
 int parse_filename(char *s, char **arg){
-	char *token, *save_ptr;
+	char *save_ptr;
 	int count = 0;
-	int i=0;
-//	for(token = strtok_r(s, " ", &save_ptr);token!=NULL;token = strtok_r(NULL, " ", &save_ptr))
-//		count++;
 
 	for(arg[count] = strtok_r(s, " ", &save_ptr);
 		arg[count]!=NULL; arg[count] = strtok_r(NULL, " ", &save_ptr))
@@ -486,129 +482,49 @@ int parse_filename(char *s, char **arg){
 		count++;
 	}
 
-	//for(i ;i < count ; i++) printf("OOOOO%s\n",arg[i]);
 	return count;
 }
 
-void construct_ESP(void **esp, int count, char *file_name, char **arg){
-
-	int cnt = count;
-	int i=0, j=0;
-	int arglen = 0, totallen = 0;
-	int *argaddress[100];
+void construct_ESP(void **esp, int count, char **arg){
+	int i, align, temp, total_len = 0, arg_len = 0;
+	int *arg_address[100];
 	char *argv;
-	int align;
-	
 
-	printf("debug esp : %x\n",(int)*esp);
-
-	//argv[i][...]
-	for(i = cnt-1 ; i >= 0 ; i--){
-		arglen = strlen(arg[i]);
-		totallen += (arglen+1);
-		*esp = *esp - (arglen + 1);
-		printf("debug construct_ESP->arg[] : %s, arg length %d, esp %x\n",arg[i], arglen, (int)*esp);
-		memcpy(*esp, arg[i], (arglen + 1) );
-		argaddress[i] = *esp;
+	// argv[count-1 -> 0]
+	for(i=count-1;i>=0;i--){
+		arg_len = strlen(arg[i]) + 1;
+		*esp = *esp - arg_len;
+		memcpy(*esp, arg[i], arg_len);
+		arg_address[i] = *esp;
+		total_len += arg_len;
 	}
 
-	//word-align
-	align = (4 - totallen%4)%4;
-	printf("debug align %d\n",align);
+	// word-align
+	align = (4 - (total_len % 4))%4;
 	*esp = *esp - align;
-	totallen += align;
 	memset(*esp, 0, align);
 
-	//argv[+] 0
+	// argv[count]
 	*esp = *esp - 4;
-	totallen += 4;
 	memset(*esp, 0, 4);
 
-	//argv[i] address
-	*esp = *esp - 4;
-    totallen += 4;
-
-	cnt = count;
-	while(cnt){
-		
-		memcpy(*esp, &argaddress[cnt-1], 4);
-		if(cnt == 1)
+	// argv[count-1 -> 0]
+	temp = count;
+	while(temp--){
+		*esp = *esp - 4;
+		memcpy(*esp, &arg_address[temp], 4);
+		if(temp == 0)
 			argv = *esp;
-
-		*esp = *esp-4;
-		totallen += 4;
-		cnt--;
 	}
 
-	//argv
-	memcpy(*esp, &argv, 4);
-	
-	//argc	
+	// argv
 	*esp = *esp - 4;
-	totallen += 4;
+	memcpy(*esp, &argv, 4);
+
+	// argc
+	*esp = *esp - 4;
 	memcpy(*esp, &count, 4);
 
-	//return address
+	// return
 	*esp = *esp - 4;
-	totallen += 4;
-
-
-
-
-	printf("debug totallen : %d\n",totallen);
-	hex_dump((int)(*esp-12), *esp - 12, 128, true);
-
-/*	int size = 0, n = 0, cn = count;
-	int align;
-	int *address[100];
-	char *add[100], *argv;
-	int length = 0;
-
-	while(cn--){
-		add[cn] = file_name + size;
-		for(;*(file_name+size)!='\0';size++)
-			;
-		size++;
-	}
-
-	cn = 0;
-	while(cn<count){
-		n = strlen(add[cn]);
-		for(length=0;length<n&&(*(add[cn]+length)==' ');length++){}
-		*esp = *esp - (n-length+1);
-		memcpy(*esp, add[cn]+length, (n-length+1));
-		address[count-cn-1] = *esp;
-		cn++;
-	}
-
-	align = (4 - size%4)%4;
-	*esp = *esp - align;
-	size += align;
-	memset(*esp, 0, align);
-
-	*esp = *esp - 4;
-	size += 4;
-	memset(*esp, 0, 4);
-
-	*esp = *esp - 4;
-	size += 4;
-
-	cn = count;
-	while(cn){
-		memcpy(*esp, &address[cn-1], 4);
-		if(cn == 1)
-			argv = *esp;
-
-		*esp = *esp-4;
-		size += 4;
-		cn--;
-	}
-
-	memcpy(*esp, &argv, 4);
-	*esp = *esp - 4;
-	size += 4;
-
-	memcpy(*esp, &count, 4);
-	*esp = *esp - 4;
-	size += 4;*/
 }
