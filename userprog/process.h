@@ -8,6 +8,5 @@ int process_wait (tid_t);
 void process_exit (void);
 void process_activate (void);
 int parse_filename(char *, char **);
-void construct_ESP(void **, int, char **);
-
+void construct_ESP(void **, char **, int);
 #endif /* userprog/process.h */
