@@ -112,7 +112,7 @@ int syscall_write(int fd, const void *buffer, unsigned size){
 	return -1;
 }
 
-int syscall_fibonacci(int n){
+int syscall_fibonacci(int n){//1 1 2 3 5 8 12
 	int i;
 	int a=1, b=1, sum=0;
 
@@ -127,10 +127,11 @@ int syscall_fibonacci(int n){
 		a = b;
 		b = sum;
 	}
-
+	printf("fibonacci(%d) = %d\n", n, sum);
 	return sum;
 }
 
 int syscall_sum_of_four_integers(int a, int b, int c, int d){
+	printf("%d + %d + %d + %d = %d\n",a,b,c,d,a+b+c+d);
 	return a + b + c + d;
 }

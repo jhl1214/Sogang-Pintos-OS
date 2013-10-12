@@ -1,0 +1,2 @@
+gcc -c systest.c -o systest.o -g -msoft-float -O -fno-stack-protector -nostdinc -I.. -I../lib -I../lib/user -I. -Wall -W -Wstrict-prototypes -Wmissing-prototypes -Wsystem-headers  -MMD -MF systest.d
+gcc  -Wl,--build-id=none -nostdlib -static -Wl,-T,../lib/user/user.lds systest.o lib/user/entry.o libc.a -o systest
