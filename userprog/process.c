@@ -315,7 +315,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 	*eip = (void (*) (void)) ehdr.e_entry;
 
 	construct_ESP(esp, argv, argc);
-	hex_dump((int)*esp, *esp, PHYS_BASE - (int)*esp, true);
+	//hex_dump((int)*esp, *esp, PHYS_BASE - (int)*esp, true);
 
 	success = true;
 

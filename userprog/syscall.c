@@ -23,46 +23,41 @@ syscall_handler (struct intr_frame *f UNUSED)
 			syscall_halt();
 			break;
 		case SYS_EXIT:
-			//syscall_exit(a);
+			syscall_exit(*(int *)(f->esp+4));
 			break;
 		case SYS_EXEC:
-			//syscall_exec(a);
 			break;
 		case SYS_WAIT:
-			//syscall_wait(a);
+			f->eax = syscall_wait(*(tid_t *)(f->esp+4));
 			break;
 		case SYS_CREATE:
-			//syscall_create(a, b);
 			break;
 		case SYS_REMOVE:
-			//syscall_remove(a);
 			break;
 		case SYS_OPEN:
-			//syscall_open(a);
 			break;
 		case SYS_FILESIZE:
-			//syscall_filesize(a);
 			break;
 		case SYS_READ:
-			//syscall_read(a, b, c);
 			break;
 		case SYS_WRITE:
-			//syscall_write(a, b, c);
+			f->eax = syscall_write(*(int *)(f->esp+4), *(int **)(f->esp+8), *(int *)(f->esp+12));
 			break;
 		case SYS_SEEK:
-			//syscall_seek(a, b);
 			break;
 		case SYS_TELL:
-			//syscall_tell(a);
 			break;
 		case SYS_CLOSE:
-			//syscall_close(a);
+			break;
+		case SYS_FIBO:
+			f->eax = syscall_fibonacci(*(int *)(f->esp+4));
+			break;
+		case SYS_SUM:
+			f->eax = syscall_sum_of_four_integers(*(int *)(f->esp+4), *(int *)(f->esp+8), *(int *)(f->esp+12), *(int *)(f->esp+16));
 			break;
 		default:
 			printf("default\n");
 	}
-	printf("This is Sparata!!!!!!\nnum is %d\n", num);
-	thread_exit();
 }
 
 void syscall_halt(void){
@@ -70,37 +65,51 @@ void syscall_halt(void){
 }
 
 void syscall_exit(int status){
+	struct thread *cur = thread_current();
+	char *token[128], *save_ptr;
+	int i;
+
+	strlcpy(token, cur->name, strlen(cur->name)+1);
+	strtok_r(token, " \0\n", &save_ptr);
+
+	printf("%s: exit(%d)\n", token, status);
+
+	thread_exit();
 }
 
-int syscall_exec(const char *cmd_line){
+tid_t syscall_exec(const char *cmd_line){
+	tid_t id;
+
+	id = process_execute(cmd_line);
+	if(id == -1)
+		return -1;
+
+	return id;
 }
 
-int syscall_wait(int pid){
-}
-
-bool syscall_create(const char *file, unsigned initial_size){
-}
-
-bool syscall_remove(const char *file){
-}
-
-int syscall_open(const char *file){
-}
-
-int syscall_filesize(int fd){
-}
-
-int syscall_read(int fd, void *buffer, unsigned size){
+int syscall_wait(tid_t id){
+	return (int)process_wait(id);
 }
 
 int syscall_write(int fd, const void *buffer, unsigned size){
+	int i = 0;
+
+	if(fd == 1){
+		for(i=0;i<(int)size;i++){
+			if(*(const char *)(buffer + i) == 0)
+				break;
+		}
+		putbuf((const char *)buffer, i);
+		return i;
+	}
+
+	return -1;
 }
 
-void syscall_seek(int fd, unsigned position){
+int syscall_fibonacci(int n){
+	return n;
 }
 
-unsigned syscall_tell(int fd){
-}
-
-void syscall_close(int fd){
+int syscall_sum_of_four_integers(int a, int b, int c, int d){
+	return a + b + c + d;
 }
