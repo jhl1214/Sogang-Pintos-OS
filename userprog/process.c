@@ -28,20 +28,30 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 	tid_t
 process_execute (const char *file_name) 
 {
-	char *fn_copy;
+	char *fn_copy, *fn, *str;
 	tid_t tid;
+
+	struct file *f;
 
 	/* Make a copy of FILE_NAME.
 	   Otherwise there's a race between the caller and load(). */
 	fn_copy = palloc_get_page (0);
+	fn = palloc_get_page (0);
 	if (fn_copy == NULL)
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE);
+	strlcpy (fn, file_name, PGSIZE);
+	strtok_r(fn, " \n\r\0'", &str);
+	f = filesys_open(fn);
+	if(f==NULL){
+		tid = -1;
+		return tid;
+	}
 
 	/* Create a new thread to execute FILE_NAME. */
 	tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
 	if (tid == TID_ERROR)
-		palloc_free_page (fn_copy); 
+		palloc_free_page (fn_copy);
 	return tid;
 }
 
@@ -88,8 +98,25 @@ start_process (void *file_name_)
 	int
 process_wait (tid_t child_tid UNUSED) 
 {
-	while(1){}
-	return -1;
+	//TODO (junho) : finish process_wait
+	struct thread *cur = thread_current();
+	struct list *thread_list = &cur->child_list;
+	struct list_elem *elem = list_begin(thread_list);
+
+	while(elem != list_end(thread_list)){
+		struct thread *child = list_entry(elem, struct thread, allelem);
+
+		if(child->tid == child_tid){
+			cur->wait_flag = true;
+			sema_down(&cur->sema);
+			sema_up(&child->sema);
+			cur->wait_flag = false;
+
+			return child->ret_value;
+		}
+	}
+
+	return (list_entry(elem, struct thread, allelem))->ret_value;
 }
 
 /* Free the current process's resources. */
@@ -114,6 +141,11 @@ process_exit (void)
 		cur->pagedir = NULL;
 		pagedir_activate (NULL);
 		pagedir_destroy (pd);
+	}
+
+	if(strcmp(cur->name, "main") != 0){
+		sema_up(&(cur->parent)->sema);
+		sema_down(&cur->sema);
 	}
 }
 

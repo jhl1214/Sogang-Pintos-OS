@@ -5,6 +5,13 @@
 #include "threads/thread.h"
 
 static void syscall_handler (struct intr_frame *);
+void syscall_halt (void);
+void syscall_exit (int);
+tid_t syscall_exec (const char *);
+int syscall_wait (tid_t);
+int syscall_write (int, const void *, unsigned);
+int syscall_fibonacci (int);
+int syscall_sum_of_four_integers (int, int, int, int);
 
 	void
 syscall_init (void) 
@@ -26,6 +33,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 			syscall_exit(*(int *)(f->esp+4));
 			break;
 		case SYS_EXEC:
+			f->eax = syscall_exec(*(char **)(f->esp+4));
 			break;
 		case SYS_WAIT:
 			f->eax = syscall_wait(*(tid_t *)(f->esp+4));
@@ -55,8 +63,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 		case SYS_SUM:
 			f->eax = syscall_sum_of_four_integers(*(int *)(f->esp+4), *(int *)(f->esp+8), *(int *)(f->esp+12), *(int *)(f->esp+16));
 			break;
-		default:
-			printf("default\n");
 	}
 }
 
@@ -67,8 +73,8 @@ void syscall_halt(void){
 void syscall_exit(int status){
 	struct thread *cur = thread_current();
 	char *token[128], *save_ptr;
-	int i;
 
+	cur->ret_value = status;
 	strlcpy(token, cur->name, strlen(cur->name)+1);
 	strtok_r(token, " \0\n", &save_ptr);
 
@@ -107,7 +113,22 @@ int syscall_write(int fd, const void *buffer, unsigned size){
 }
 
 int syscall_fibonacci(int n){
-	return n;
+	int i;
+	int a=1, b=1, sum=0;
+
+	if(n<=0)
+		return -1;
+
+	if(n>0 && n<3)
+		return 1;
+
+	for(i=2;i<n;i++){
+		sum = a + b;
+		a = b;
+		b = sum;
+	}
+
+	return sum;
 }
 
 int syscall_sum_of_four_integers(int a, int b, int c, int d){
