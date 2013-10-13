@@ -80,6 +80,7 @@ void syscall_exit(int status){
 
 	if(status < -1)
 		status = -1;
+
 	printf("%s: exit(%d)\n", token, status);
 
 	thread_exit();

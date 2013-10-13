@@ -107,17 +107,15 @@ process_wait (tid_t child_tid UNUSED)
 		struct thread *child = list_entry(elem, struct thread, allelem);
 
 		if(child->tid == child_tid){
-			cur->wait_flag = true;
+			if(child->wait_flag == true)
+				return -1;
+			child->wait_flag = true;
 			sema_down(&cur->sema);
 			sema_up(&child->sema);
-			cur->wait_flag = false;
 
 			return child->ret_value;
 		}
 	}
-
-	//if((cur->wait_flag == true && strcmp(cur->name, "main")!=0))
-	//	return -1;
 
 	return (list_entry(elem, struct thread, allelem))->ret_value;
 }
