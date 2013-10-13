@@ -208,6 +208,7 @@ thread_create (const char *name, int priority,
 
   t->parent = thread_current();
   t->wait_flag = false;
+
   list_push_front(&(t->parent)->child_list, &t->allelem);
 
   /* Add to run queue. */
@@ -293,19 +294,22 @@ void
 thread_exit (void) 
 {
   ASSERT (!intr_context ());
-
+//	printf("debug thread_exit\n");
 #ifdef USERPROG
   process_exit ();
+  //printf("thread_exit here USERPROG? %s\n",thread_current ()->name);
 #endif
 
   /* Remove thread from all threads list, set our status to dying,
      and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */
+  //printf("thread_exit here next? %s\n",thread_current ()->name);
   intr_disable ();
   list_remove (&thread_current()->allelem);
   thread_current ()->status = THREAD_DYING;
   schedule ();
   NOT_REACHED ();
+ 
 }
 
 /* Yields the CPU.  The current thread is not put to sleep and

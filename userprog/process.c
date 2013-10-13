@@ -50,6 +50,8 @@ process_execute (const char *file_name)
 
 	/* Create a new thread to execute FILE_NAME. */
 	tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+	//printf("debug process_excute %s, tid:%d\n",file_name,tid);
+
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -64,6 +66,9 @@ start_process (void *file_name_)
 	struct intr_frame if_;
 	bool success;
 
+	struct thread *cur = thread_current();
+
+//	printf("debug start_process, file=%s, cur->tid=%d\n",file_name_,cur->tid);
 	/* Initialize interrupt frame and load executable. */
 	memset (&if_, 0, sizeof if_);
 	if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
@@ -98,24 +103,40 @@ start_process (void *file_name_)
 	int
 process_wait (tid_t child_tid UNUSED) 
 {
-	//TODO (junho) : finish process_wait
+	//TODO (junho) : finish process_wai
 	struct thread *cur = thread_current();
 	struct list *thread_list = &cur->child_list;
 	struct list_elem *elem = list_begin(thread_list);
+		
+	//printf("debug process_wait 1, cur->name=%s, cur->tid=%d, arg_tid=%d\n",cur->name, cur->tid,child_tid);
+//	if(cur->status == THREAD_DYING){
+//			printf("process_wait good?\n");
+//			return -1;
+//		}
 
 	while(elem != list_end(thread_list)){
 		struct thread *child = list_entry(elem, struct thread, allelem);
 
-		if(child->tid == child_tid){
-			cur->wait_flag = true;
-			sema_down(&cur->sema);
-			sema_up(&child->sema);
-			cur->wait_flag = false;
 
+	//printf("debug process_wait 2, cur->name=%s, cur->tid=%d, child->name=%s, child->tid=%d, arg_tid=%d\n",cur->name, cur->tid,child->name,child_tid,child_tid);
+		if(child->tid == child_tid){
+	//printf("debug process_wait 3, cur->name=%s, cur->tid=%d, child->name=%s, child->tid=%d, arg_tid=%d\n",cur->name, cur->tid,child->name,child_tid,child_tid);
+			if(child->wait_flag ==true)
+				return -1;
+			
+	//printf("debug process_wait 4, cur->name=%s, cur->tid=%d, child->name=%s, child->tid=%d, arg_tid=%d\n",cur->name, cur->tid,child->name,child_tid,child_tid);
+
+			//cur->wait_flag = true;
+			sema_down(&cur->sema);
+			//sema_up(&child->sema);
+//			cur->wait_flag = false;
+			child->wait_flag = true;
+
+			//printf("debug wait : child->ret_value %d\n",child->ret_value);
 			return child->ret_value;
 		}
 	}
-
+	//printf("debug process_wait 5\n");
 	//if((cur->wait_flag == true && strcmp(cur->name, "main")!=0))
 	//	return -1;
 
@@ -146,6 +167,7 @@ process_exit (void)
 		pagedir_destroy (pd);
 	}
 
+	//printf("debug process_exit %s, tid:%d\n",cur->name, cur->tid);
 	if(strcmp(cur->name, "main") != 0){
 		sema_up(&(cur->parent)->sema);
 		sema_down(&cur->sema);
