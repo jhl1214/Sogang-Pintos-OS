@@ -116,6 +116,9 @@ process_wait (tid_t child_tid UNUSED)
 		}
 	}
 
+	//if((cur->wait_flag == true && strcmp(cur->name, "main")!=0))
+	//	return -1;
+
 	return (list_entry(elem, struct thread, allelem))->ret_value;
 }
 

@@ -78,6 +78,8 @@ void syscall_exit(int status){
 	strlcpy(token, cur->name, strlen(cur->name)+1);
 	strtok_r(token, " \0\n", &save_ptr);
 
+	if(status < -1)
+		status = -1;
 	printf("%s: exit(%d)\n", token, status);
 
 	thread_exit();
