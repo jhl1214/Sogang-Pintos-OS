@@ -84,7 +84,6 @@ void syscall_exit(int status){
 	printf("%s: exit(%d)\n", token, status);
 
 	thread_exit();
-//	printf("debug syscall_exit, file=%s\n",thread_name());
 }
 
 tid_t syscall_exec(const char *cmd_line){
