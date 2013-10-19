@@ -103,16 +103,15 @@ process_wait (tid_t child_tid UNUSED)
 {
 	//TODO (junho) : finish process_wai
 	struct thread *cur = thread_current();
-	struct list *thread_list = &cur->child_list;
-	struct list_elem *elem = list_begin(thread_list);
+	struct list_elem *elem = list_begin(&cur->child_list);
 		
-	while(elem != list_end(thread_list)){
+	while(elem != list_end(&cur->child_list)){
 		struct thread *child = list_entry(elem, struct thread, allelem);
 
 		if(child->tid == child_tid){
 			if(child->status == THREAD_BLOCKED)
 				return -1;
-			
+		
 			sema_down(&cur->sema);
 			return child->ret_value;
 		}
