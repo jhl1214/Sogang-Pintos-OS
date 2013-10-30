@@ -29,6 +29,8 @@ enum
 	SYS_READDIR,                /* Reads a directory entry. */
 	SYS_ISDIR,                  /* Tests if a fd represents a directory. */
 	SYS_INUMBER,                /* Returns the inode number for a fd. */
+
+	/* Project 2-1 extra function */
 	SYS_FIBO,                   /* Returns the fibonnacci number */
 	SYS_SUM                     /* Returns the sum of four number */
 };

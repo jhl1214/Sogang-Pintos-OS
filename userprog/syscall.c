@@ -39,23 +39,31 @@ syscall_handler (struct intr_frame *f UNUSED)
 			f->eax = syscall_wait(*(tid_t *)(f->esp+4));
 			break;
 		case SYS_CREATE:
+			f->eax = syscall_create(*(char **)(f->esp+4), *(int *)(f->esp+8));
 			break;
 		case SYS_REMOVE:
+			f->eax = syscall_remove(*(char **)(f->esp+4));
 			break;
 		case SYS_OPEN:
+			f->eax = syscall_open(*(char **)(f->esp+4));
 			break;
 		case SYS_FILESIZE:
+			f->eax = syscall_filesize(*(int *)(f->esp+4));
 			break;
 		case SYS_READ:
+			f->eax = syscall_read(*(int *)(f->esp+4), *(int **)(f->esp+8), *(int *)(f->esp+12));
 			break;
 		case SYS_WRITE:
 			f->eax = syscall_write(*(int *)(f->esp+4), *(int **)(f->esp+8), *(int *)(f->esp+12));
 			break;
 		case SYS_SEEK:
+			f->eax = syscall_seek(*(int *)(f->esp+4), *(int *)(f->esp+8));
 			break;
 		case SYS_TELL:
+			f->eax = syscall_tell(*(int *)(f->esp+4));
 			break;
 		case SYS_CLOSE:
+			f->eax = syscall_close(*(int *)(f->esp+4));
 			break;
 		case SYS_FIBO:
 			f->eax = syscall_fibonacci(*(int *)(f->esp+4));
@@ -137,4 +145,31 @@ int syscall_fibonacci(int n){//1 1 2 3 5 8 12
 int syscall_sum_of_four_integers(int a, int b, int c, int d){
 	printf("%d + %d + %d + %d = %d\n",a,b,c,d,a+b+c+d);
 	return a + b + c + d;
+}
+
+/* Project 2-2 new system call functions */
+/* Since 2013.10.30 */
+
+bool syscall_create(const char *file, unsigned initial_size){
+}
+
+bool syscall_remove(const char *file){
+}
+
+int syscall_open(const char *file){
+}
+
+int syscall_filesize(int fd){
+}
+
+int syscall_read(int fd, void *buffer, unsigned size){
+}
+
+void syscall_seek(int fd, unsigned position){
+}
+
+unsigned syscall_tell(int fd){
+}
+
+void syscall_close(int fd){
 }
