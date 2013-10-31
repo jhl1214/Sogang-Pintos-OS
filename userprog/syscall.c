@@ -4,6 +4,12 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 
+struct file_item{
+	struct file *f;
+	struct list_elem elem;
+	int descripter;
+};
+
 static void syscall_handler (struct intr_frame *);
 void syscall_halt (void);
 void syscall_exit (int);
@@ -21,11 +27,6 @@ void syscall_seek(int, unsigned);
 unsigned syscall_tell(int);
 void syscall_close(int);
 
-struct file_item{
-	struct file *f;
-	struct list_elem elem;
-	int descripter
-};
 	void
 syscall_init (void) 
 {
@@ -37,7 +38,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 {
 	uint32_t num;
 	num = *(uint32_t *)(f->esp);
-	
+
 	switch(num){
 		case SYS_HALT:
 			syscall_halt();
@@ -185,19 +186,13 @@ int syscall_open(const char *file){
 	if(file == NULL)
 		return -1;
 
-	//printf("Sparta debug : thread fd before %d\n", cur->fd_total);
-	cur->fd_total = cur->fd_total + 1;
-	//printf("Sparta debug 2 : thread fd %d\n", cur->fd_total);
 	file_item->f = filesys_open(file);
-	//printf("Sparta debug 3 : thread fd %d\n", cur->fd_total);
-	file_item->descripter = cur->fd_total + 1;
-	//printf("Sparta debug 4 : thread fd %d\n", cur->fd_total);
-	list_push_back(file_list, &(file_item->elem));
-	//printf("Sparta debug 5 : thread fd %d\n", cur->fd_total);
+	if(file_item->f == NULL || !strcmp(file, ""))
+		return -1;
 
-	//printf("Sparta debug : thread %s\n", cur->name);
-	//printf("Sparta debug : thread fd %d\n", cur->fd_total);
-	//printf("Sparta debug : descripter %d\n", file_item->descripter);
+	cur->fd_total = cur->fd_total + 1;
+	file_item->descripter = cur->fd_total + 1;
+	list_push_back(file_list, &(file_item->elem));
 
 	return file_item->descripter;
 }
