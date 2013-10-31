@@ -12,6 +12,14 @@ int syscall_wait (tid_t);
 int syscall_write (int, const void *, unsigned);
 int syscall_fibonacci (int);
 int syscall_sum_of_four_integers (int, int, int, int);
+bool syscall_create(const char *, unsigned);
+bool syscall_remove(const char *);
+int syscall_open(const char *);
+int syscall_filesize(int);
+int syscall_read(int, void *, unsigned);
+void syscall_seek(int, unsigned);
+unsigned syscall_tell(int);
+void syscall_close(int);
 
 	void
 syscall_init (void) 
@@ -57,13 +65,13 @@ syscall_handler (struct intr_frame *f UNUSED)
 			f->eax = syscall_write(*(int *)(f->esp+4), *(int **)(f->esp+8), *(int *)(f->esp+12));
 			break;
 		case SYS_SEEK:
-			f->eax = syscall_seek(*(int *)(f->esp+4), *(int *)(f->esp+8));
+			syscall_seek(*(int *)(f->esp+4), *(int *)(f->esp+8));
 			break;
 		case SYS_TELL:
 			f->eax = syscall_tell(*(int *)(f->esp+4));
 			break;
 		case SYS_CLOSE:
-			f->eax = syscall_close(*(int *)(f->esp+4));
+			syscall_close(*(int *)(f->esp+4));
 			break;
 		case SYS_FIBO:
 			f->eax = syscall_fibonacci(*(int *)(f->esp+4));
@@ -151,6 +159,10 @@ int syscall_sum_of_four_integers(int a, int b, int c, int d){
 /* Since 2013.10.30 */
 
 bool syscall_create(const char *file, unsigned initial_size){
+	if(file == NULL)
+		syscall_exit(-1);
+
+	return filesys_create(file, initial_size);
 }
 
 bool syscall_remove(const char *file){
