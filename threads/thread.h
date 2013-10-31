@@ -108,6 +108,10 @@ struct thread
 	struct list_elem child_elem;
 	struct semaphore sema;
 	int ret_value;
+
+	/* New items from project 2-2 */
+	struct list *file_list;
+	int fd_total;
 };
 
 /* If false (default), use round-robin scheduler.

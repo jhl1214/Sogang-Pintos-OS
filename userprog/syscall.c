@@ -21,6 +21,11 @@ void syscall_seek(int, unsigned);
 unsigned syscall_tell(int);
 void syscall_close(int);
 
+struct file_item{
+	struct file *f;
+	struct list_elem elem;
+	int descripter
+};
 	void
 syscall_init (void) 
 {
@@ -166,9 +171,35 @@ bool syscall_create(const char *file, unsigned initial_size){
 }
 
 bool syscall_remove(const char *file){
+	if(file == NULL)
+		syscall_exit(-1);
+
+	return filesys_remove(file);
 }
 
 int syscall_open(const char *file){
+	struct thread *cur = thread_current();
+	struct list *file_list = &cur->file_list;
+	struct file_item *file_item = (struct file_item *)malloc(sizeof(struct file_item));
+
+	if(file == NULL)
+		return -1;
+
+	//printf("Sparta debug : thread fd before %d\n", cur->fd_total);
+	cur->fd_total = cur->fd_total + 1;
+	//printf("Sparta debug 2 : thread fd %d\n", cur->fd_total);
+	file_item->f = filesys_open(file);
+	//printf("Sparta debug 3 : thread fd %d\n", cur->fd_total);
+	file_item->descripter = cur->fd_total + 1;
+	//printf("Sparta debug 4 : thread fd %d\n", cur->fd_total);
+	list_push_back(file_list, &(file_item->elem));
+	//printf("Sparta debug 5 : thread fd %d\n", cur->fd_total);
+
+	//printf("Sparta debug : thread %s\n", cur->name);
+	//printf("Sparta debug : thread fd %d\n", cur->fd_total);
+	//printf("Sparta debug : descripter %d\n", file_item->descripter);
+
+	return file_item->descripter;
 }
 
 int syscall_filesize(int fd){
