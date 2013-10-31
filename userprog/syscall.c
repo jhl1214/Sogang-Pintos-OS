@@ -1,4 +1,5 @@
 #include "userprog/syscall.h"
+#include "threads/vaddr.h"
 #include <stdio.h>
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
@@ -198,9 +199,35 @@ int syscall_open(const char *file){
 }
 
 int syscall_filesize(int fd){
+	int size;
+	struct list_elem *e;
+	struct thread *cur = thread_current();
+	struct list *file_list = &cur->file_list;
+
+	for(e=list_begin(file_list);e!=list_end(file_list);e=list_next(e)){
+		struct file_item *f = list_entry(e, struct file_item, elem);
+		if(f->descripter == fd){
+			size = file_length(f->f);
+		}
+	}
+
+	return size;
 }
 
 int syscall_read(int fd, void *buffer, unsigned size){
+	struct list_elem *e;
+	struct thread *cur = thread_current();
+	struct list *file_list = &cur->file_list;
+
+	if(buffer > PHYS_BASE)
+		syscall_exit(-1);
+
+	for(e=list_begin(file_list);e!=list_end(file_list);e=list_next(e)){
+		struct file_item *f = list_entry(e, struct file_item, elem);
+		if(f->descripter == fd){
+			return file_read(f->f, buffer, size);
+		}
+	}
 }
 
 void syscall_seek(int fd, unsigned position){

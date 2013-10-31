@@ -101,7 +101,6 @@ start_process (void *file_name_)
 	int
 process_wait (tid_t child_tid UNUSED) 
 {
-	//TODO (junho) : finish process_wai
 	struct thread *cur = thread_current();
 	struct list_elem *elem = list_begin(&cur->child_list);
 		
@@ -115,6 +114,7 @@ process_wait (tid_t child_tid UNUSED)
 			sema_down(&cur->sema);
 			return child->ret_value;
 		}
+		elem = list_next(elem);
 	}
 
 	return (list_entry(elem, struct thread, allelem))->ret_value;
