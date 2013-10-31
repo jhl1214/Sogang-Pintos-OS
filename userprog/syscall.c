@@ -37,7 +37,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 {
 	uint32_t num;
 	num = *(uint32_t *)(f->esp);
-
+	
 	switch(num){
 		case SYS_HALT:
 			syscall_halt();
