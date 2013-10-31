@@ -110,7 +110,7 @@ struct thread
 	int ret_value;
 
 	/* New items from project 2-2 */
-	struct list *file_list;
+	struct list file_list;
 	int fd_total;
 };
 
