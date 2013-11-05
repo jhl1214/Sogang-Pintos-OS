@@ -125,6 +125,9 @@ int syscall_wait(tid_t id){
 
 int syscall_write(int fd, const void *buffer, unsigned size){
 	int i = 0;
+	struct thread *cur = thread_current();
+	struct list *file_list = &cur->file_list;
+	struct list_elem *e;
 
 	if(fd == 1){
 		for(i=0;i<(int)size;i++){
@@ -133,6 +136,15 @@ int syscall_write(int fd, const void *buffer, unsigned size){
 		}
 		putbuf((const char *)buffer, i);
 		return i;
+	}
+
+	if(buffer > PHYS_BASE)
+		syscall_exit(-1);
+
+	for(e=list_begin(file_list);e!=list_end(file_list);e=list_next(e)){
+		struct file_item *item = list_entry(e, struct file_item, elem);
+		if(item->descripter == fd)
+			return file_write(item->f, buffer, size);
 	}
 
 	return -1;
@@ -231,10 +243,40 @@ int syscall_read(int fd, void *buffer, unsigned size){
 }
 
 void syscall_seek(int fd, unsigned position){
+	struct list_elem *e;
+	struct thread *cur = thread_current();
+	struct list *file_list = &cur->file_list;
+
+	for(e=list_begin(file_list);e!=list_end(file_list);e=list_next(e)){
+		struct file_item *f = list_entry(e, struct file_item, elem);
+		if(f->descripter == fd)
+			file_seek(f->f, position);
+	}
 }
 
 unsigned syscall_tell(int fd){
+	struct list_elem *e;
+	struct thread *cur = thread_current();
+	struct list *file_list = &cur->file_list;
+
+	for(e=list_begin(file_list);e!=list_end(file_list);e=list_next(e)){
+		struct file_item *f = list_entry(e, struct file_item, elem);
+		if(f->descripter == fd)
+			return file_tell(f->f);
+	}
 }
 
 void syscall_close(int fd){
+	struct list_elem *e;
+	struct thread *cur = thread_current();
+	struct list *file_list = &cur->file_list;
+
+	for(e=list_begin(file_list);e!=list_end(file_list);e=list_next(e)){
+		struct file_item *f = list_entry(e, struct file_item, elem);
+		if(f->descripter == fd){
+			list_remove(e);
+			file_close(f->f);
+			break;
+		}
+	}
 }

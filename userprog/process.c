@@ -18,6 +18,11 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 
+struct file_item{
+	struct file *f;
+	struct list_elem elem;
+	int descripter;
+};
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
@@ -32,6 +37,9 @@ process_execute (const char *file_name)
 	tid_t tid;
 
 	struct file *f;
+	struct thread *cur;
+	struct list_elem *e;
+	struct file_item *file_item = (struct file_item *)malloc(sizeof(struct file_item));
 
 	/* Make a copy of FILE_NAME.
 	   Otherwise there's a race between the caller and load(). */
@@ -50,6 +58,20 @@ process_execute (const char *file_name)
 
 	/* Create a new thread to execute FILE_NAME. */
 	tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+
+	file_item->f = f;
+	file_deny_write(file_item->f);
+
+	cur = thread_current();
+	for(e=list_begin(&cur->child_list);e!=list_end(&cur->child_list);e=list_next(e)){
+		struct thread *child = list_entry(e, struct thread, allelem);
+		if(child->tid == tid){
+			child->fd_total++;
+			file_item->descripter = child->fd_total + 1;
+			list_push_back(&cur->file_list, &file_item->elem);
+			break;
+		}
+	}
 
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
@@ -126,6 +148,15 @@ process_exit (void)
 {
 	struct thread *cur = thread_current ();
 	uint32_t *pd;
+
+	struct thread *parent = cur->parent;
+	struct list *file_list = &parent->file_list;
+	struct list_elem *e;
+
+	for(e=list_begin(file_list);e!=list_end(file_list);e=list_next(e)){
+		struct file_item *item = list_entry(e, struct file_item, elem);
+		file_allow_write(item->f);
+	}
 
 	/* Destroy the current process's page directory and switch back
 	   to the kernel-only page directory. */
