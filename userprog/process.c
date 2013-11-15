@@ -66,8 +66,8 @@ process_execute (const char *file_name)
 	for(e=list_begin(&cur->child_list);e!=list_end(&cur->child_list);e=list_next(e)){
 		struct thread *child = list_entry(e, struct thread, allelem);
 		if(child->tid == tid){
-			child->fd_total++;
-			file_item->descripter = child->fd_total + 1;
+			cur->fd_total++;
+			file_item->descripter = cur->fd_total + 1;
 			list_push_back(&cur->file_list, &file_item->elem);
 			break;
 		}
@@ -125,21 +125,23 @@ process_wait (tid_t child_tid UNUSED)
 {
 	struct thread *cur = thread_current();
 	struct list_elem *elem = list_begin(&cur->child_list);
-		
+
 	while(elem != list_end(&cur->child_list)){
 		struct thread *child = list_entry(elem, struct thread, allelem);
 
 		if(child->tid == child_tid){
-			if(child->status == THREAD_BLOCKED)
+			if(child->status == THREAD_BLOCKED || child->exit_flag == 1)
 				return -1;
-		
+
 			sema_down(&cur->sema);
+			sema_up(&child->sema);
 			return child->ret_value;
 		}
 		elem = list_next(elem);
 	}
 
-	return (list_entry(elem, struct thread, allelem))->ret_value;
+	//return (list_entry(elem, struct thread, allelem))->ret_value;
+	return cur->ret_value;
 }
 
 /* Free the current process's resources. */
@@ -152,6 +154,8 @@ process_exit (void)
 	struct thread *parent = cur->parent;
 	struct list *file_list = &parent->file_list;
 	struct list_elem *e;
+	int flag = 0;
+	
 
 	for(e=list_begin(file_list);e!=list_end(file_list);e=list_next(e)){
 		struct file_item *item = list_entry(e, struct file_item, elem);
@@ -174,6 +178,8 @@ process_exit (void)
 		pagedir_activate (NULL);
 		pagedir_destroy (pd);
 	}
+
+	cur->exit_flag = 1;
 
 	if(strcmp(cur->name, "main") != 0){
 		sema_up(&(cur->parent)->sema);

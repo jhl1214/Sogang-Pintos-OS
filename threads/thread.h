@@ -112,6 +112,7 @@ struct thread
 	/* New items from project 2-2 */
 	struct list file_list;
 	int fd_total;
+	int exit_flag;
 };
 
 /* If false (default), use round-robin scheduler.

@@ -4,6 +4,7 @@
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "filesys/file.h"
 
 struct file_item{
 	struct file *f;
@@ -32,6 +33,7 @@ void syscall_close(int);
 syscall_init (void) 
 {
 	intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
+	lock_init(&lock1);
 }
 
 	static void
@@ -106,13 +108,18 @@ void syscall_exit(int status){
 
 	printf("%s: exit(%d)\n", token, status);
 
+	//printf("DEBUG SYS_EXIT : %s with pid of %d is going to finish the job\n", cur->name, cur->tid);
+	//lock_acquire(&lock1);
 	thread_exit();
+	//lock_release(&lock1);
 }
 
 tid_t syscall_exec(const char *cmd_line){
 	tid_t id;
 
+	lock_acquire(&lock1);
 	id = process_execute(cmd_line);
+	lock_release(&lock1);
 	if(id == -1)
 		return -1;
 
@@ -120,7 +127,12 @@ tid_t syscall_exec(const char *cmd_line){
 }
 
 int syscall_wait(tid_t id){
-	return (int)process_wait(id);
+	int result;
+	//lock_acquire(&lock1);
+	result = process_wait(id);
+	//lock_release(&lock1);
+	//return (int)process_wait(id);
+	return result;
 }
 
 int syscall_write(int fd, const void *buffer, unsigned size){
@@ -143,8 +155,14 @@ int syscall_write(int fd, const void *buffer, unsigned size){
 
 	for(e=list_begin(file_list);e!=list_end(file_list);e=list_next(e)){
 		struct file_item *item = list_entry(e, struct file_item, elem);
-		if(item->descripter == fd)
-			return file_write(item->f, buffer, size);
+		if(item->descripter == fd){
+			int result;
+			lock_acquire(&lock1);
+			result = file_write(item->f, buffer, size);
+			lock_release(&lock1);
+			//return file_write(item->f, buffer, size);
+			return result;
+		}
 	}
 
 	return -1;
@@ -178,17 +196,28 @@ int syscall_sum_of_four_integers(int a, int b, int c, int d){
 /* Since 2013.10.30 */
 
 bool syscall_create(const char *file, unsigned initial_size){
+	bool result;
 	if(file == NULL)
 		syscall_exit(-1);
 
-	return filesys_create(file, initial_size);
+	lock_acquire(&lock1);
+	result = filesys_create(file, initial_size);
+	lock_release(&lock1);
+
+	//return filesys_create(file, initial_size);
+	return result;
 }
 
 bool syscall_remove(const char *file){
+	bool result;
 	if(file == NULL)
 		syscall_exit(-1);
 
-	return filesys_remove(file);
+	lock_acquire(&lock1);
+	result = filesys_remove(file);
+	lock_release(&lock1);
+	//return filesys_remove(file);
+	return result;
 }
 
 int syscall_open(const char *file){
@@ -199,7 +228,10 @@ int syscall_open(const char *file){
 	if(file == NULL)
 		return -1;
 
+	//printf("DEBUG OPEN : %s with pid of %d called open\n", cur->name, cur->tid);
+	lock_acquire(&lock1);
 	file_item->f = filesys_open(file);
+	lock_release(&lock1);
 	if(file_item->f == NULL || !strcmp(file, ""))
 		return -1;
 
@@ -219,7 +251,10 @@ int syscall_filesize(int fd){
 	for(e=list_begin(file_list);e!=list_end(file_list);e=list_next(e)){
 		struct file_item *f = list_entry(e, struct file_item, elem);
 		if(f->descripter == fd){
+			lock_acquire(&lock1);
 			size = file_length(f->f);
+			lock_release(&lock1);
+			break;
 		}
 	}
 
@@ -237,7 +272,12 @@ int syscall_read(int fd, void *buffer, unsigned size){
 	for(e=list_begin(file_list);e!=list_end(file_list);e=list_next(e)){
 		struct file_item *f = list_entry(e, struct file_item, elem);
 		if(f->descripter == fd){
-			return file_read(f->f, buffer, size);
+			off_t result;
+			lock_acquire(&lock1);
+			result = file_read(f->f, buffer, size);
+			lock_release(&lock1);
+			//return file_read(f->f, buffer, size);
+			return result;
 		}
 	}
 }
@@ -249,8 +289,11 @@ void syscall_seek(int fd, unsigned position){
 
 	for(e=list_begin(file_list);e!=list_end(file_list);e=list_next(e)){
 		struct file_item *f = list_entry(e, struct file_item, elem);
-		if(f->descripter == fd)
+		if(f->descripter == fd){
+			lock_acquire(&lock1);
 			file_seek(f->f, position);
+			lock_release(&lock1);
+		}
 	}
 }
 
@@ -261,8 +304,14 @@ unsigned syscall_tell(int fd){
 
 	for(e=list_begin(file_list);e!=list_end(file_list);e=list_next(e)){
 		struct file_item *f = list_entry(e, struct file_item, elem);
-		if(f->descripter == fd)
-			return file_tell(f->f);
+		if(f->descripter == fd){
+			unsigned result;
+			lock_acquire(&lock1);
+			result = file_tell(f->f);
+			lock_release(&lock1);
+			//return file_tell(f->f);
+			return result;
+		}
 	}
 }
 
@@ -275,7 +324,9 @@ void syscall_close(int fd){
 		struct file_item *f = list_entry(e, struct file_item, elem);
 		if(f->descripter == fd){
 			list_remove(e);
+			lock_acquire(&lock1);
 			file_close(f->f);
+			lock_release(&lock1);
 			break;
 		}
 	}

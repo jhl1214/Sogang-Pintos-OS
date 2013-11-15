@@ -208,7 +208,7 @@ thread_create (const char *name, int priority,
 
 	t->parent = thread_current();
 
-	list_push_front(&(t->parent)->child_list, &t->allelem);
+	list_push_back(&(t->parent)->child_list, &t->allelem);
 
 	/* Add to run queue. */
 	thread_unblock (t);
@@ -480,6 +480,7 @@ init_thread (struct thread *t, const char *name, int priority)
 	t->fd_total = 0;
 	sema_init(&t->sema, 0);
 	t->parent = NULL;
+	t->exit_flag = 0;
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
