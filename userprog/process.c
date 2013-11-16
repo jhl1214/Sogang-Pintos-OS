@@ -130,6 +130,9 @@ process_wait (tid_t child_tid UNUSED)
 		struct thread *child = list_entry(elem, struct thread, allelem);
 
 		if(child->tid == child_tid){
+			if(child->exit_flag == 1 && child->status == THREAD_BLOCKED)
+				return child->ret_value;
+
 			if(child->status == THREAD_BLOCKED || child->exit_flag == 1)
 				return -1;
 
@@ -140,7 +143,6 @@ process_wait (tid_t child_tid UNUSED)
 		elem = list_next(elem);
 	}
 
-	//return (list_entry(elem, struct thread, allelem))->ret_value;
 	return cur->ret_value;
 }
 
@@ -154,8 +156,6 @@ process_exit (void)
 	struct thread *parent = cur->parent;
 	struct list *file_list = &parent->file_list;
 	struct list_elem *e;
-	int flag = 0;
-	
 
 	for(e=list_begin(file_list);e!=list_end(file_list);e=list_next(e)){
 		struct file_item *item = list_entry(e, struct file_item, elem);
