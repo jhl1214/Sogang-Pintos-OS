@@ -159,23 +159,21 @@ page_fault (struct intr_frame *f)
 	kill (f);*/
 	//syscall_exit(-1);
 	
-	void *newpage;
 	static void *expage = PHYS_BASE - PGSIZE*2;
 	struct thread *tmp_t = thread_current();
 
 	if(fault_addr < PHYS_BASE && fault_addr > 0){
-		if(expage <= PHYS_BASE - PGSIZE*21){
+		if(expage <= PHYS_BASE - PGSIZE*21 && !not_present){
 			tmp_t->parent->ret_value = -1;
 			syscall_exit(-1);
 		}
 
 		pg_round_down(fault_addr);
 
-		if(not_present){
+		else{
 			if(user && write){
-				newpage = palloc_get_page(PAL_USER);
 				pagedir_get_page(tmp_t->pagedir, expage);
-				pagedir_set_page(tmp_t->pagedir, expage, newpage, write);
+				pagedir_set_page(tmp_t->pagedir, expage, palloc_get_page(PAL_USER), write);
 				expage = expage - PGSIZE;
 			}
 
@@ -183,11 +181,6 @@ page_fault (struct intr_frame *f)
 				tmp_t->parent->ret_value = -1;
 				syscall_exit(-1);
 			}
-		}
-
-		else{
-			tmp_t->parent->ret_value = -1;
-			syscall_exit(-1);
 		}
 	}
 }
