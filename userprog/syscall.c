@@ -12,6 +12,12 @@ struct file_item{
 	int descripter;
 };
 
+struct file_item{
+	struct file *f;
+	struct list_elem elem;
+	int descripter;
+};
+
 static void syscall_handler (struct intr_frame *);
 void syscall_halt (void);
 void syscall_exit (int);
